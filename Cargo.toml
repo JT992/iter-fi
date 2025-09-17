@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["jt992"]
 edition = "2024"
 description = "Boolean composable iterators."
+license = "MIT"
+repository = "https://github.com/JT992/iter-fi"
 
 [dependencies]
 either = { version = "1.15.0", optional = true }
