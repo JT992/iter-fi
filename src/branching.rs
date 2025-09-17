@@ -26,6 +26,26 @@ impl<T: Iterator, F: Iterator> Iterator for Branched<T, F> {
 
 impl<T: Iterator, F: Iterator> Branched<T, F> {
     /// Return `Some(T)` if the condition was true and `None` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let something = ('a'..'f')
+    ///     .map_if(true, |c| c as u8)
+    ///     .branched()
+    ///     .as_true()
+    ///     .unwrap()
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(something, vec![97, 98, 99, 100, 101]);
+    ///
+    /// let something_else = (0..5)
+    ///     .map_if(false, |c| c as u8)
+    ///     .branched()
+    ///     .as_true();
+    /// assert!(something_else.is_none());
+    /// ```
     pub fn as_true(self) -> Option<T> {
         match self.0 {
             IterIf::True(t) => Some(t),
@@ -34,21 +54,31 @@ impl<T: Iterator, F: Iterator> Branched<T, F> {
     }
 
     /// Return `Some(F)` if the condition was false and `None` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let something = ('a'..'f')
+    ///     .map_if(false, |c| c as u8)
+    ///     .branched()
+    ///     .as_false()
+    ///     .unwrap()
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(something, vec!['a', 'b', 'c', 'd', 'e']);
+    ///
+    /// let something_else = (0..5)
+    ///     .map_if(true, |c| c as u8)
+    ///     .branched()
+    ///     .as_false();
+    /// assert!(something_else.is_none());
+    /// ```
     pub fn as_false(self) -> Option<F> {
         match self.0 {
             IterIf::True(_) => None,
             IterIf::False(f) => Some(f),
         }
-    }
-
-    /// True if the condition was true.
-    pub fn is_true(&self) -> bool {
-        matches!(self.0, IterIf::True(_))
-    }
-
-    /// True if the condition was false.
-    pub fn is_false(&self) -> bool {
-        matches!(self.0, IterIf::False(_))
     }
 }
 

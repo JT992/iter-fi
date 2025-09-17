@@ -46,6 +46,26 @@ pub trait IterFi: Iterator {
     /// Note that if [`T::Item`] is not the same as `F::Item`, you will need to call [`branched`]
     /// after this to get an iterator.
     ///
+    /// # Examples
+    ///
+    /// When the condition is true, the function is applied:
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let numbers = (0..5).iter_if(true, Iterator::rev).collect::<Vec<_>>();
+    /// assert_eq!(numbers, vec![4, 3, 2, 1, 0]);
+    /// ```
+    ///
+    /// When the condition is false, the function is ignored:
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let numbers = (0..5).iter_if(false, Iterator::rev).collect::<Vec<_>>();
+    /// assert_eq!(numbers, vec![0, 1, 2, 3, 4]);
+    /// ```
+    ///
     /// [`T::Item`]: Iterator::Item
     /// [`branched`]: IterIf::branched
     fn iter_if<C, T: Iterator>(self, condition: bool, func: C) -> IterIf<T, Self>
@@ -65,6 +85,26 @@ pub trait IterFi: Iterator {
     ///
     /// This is a shorthand for `iter_if(condition, |i| i.map(func))`.
     /// See the documentation for [`iter_if`] for more.
+    ///
+    /// # Examples
+    ///
+    /// When the condition is true, the map is applied:
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let numbers = (0..5).map_if(true, |n| n * 2).collect::<Vec<_>>();
+    /// assert_eq!(numbers, vec![0, 2, 4, 6, 8]);
+    /// ```
+    ///
+    /// When the condition is false, the map is ignored:
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let numbers = (0..5).map_if(false, |n| n * 2).collect::<Vec<_>>();
+    /// assert_eq!(numbers, vec![0, 1, 2, 3, 4]);
+    /// ```
     ///
     /// [`iter_if`]: IterFi::iter_if
     fn map_if<C, T>(self, condition: bool, func: C) -> IterIf<Map<Self, C>, Self>
@@ -114,13 +154,50 @@ impl<T: Iterator, F: Iterator> IterIf<T, F> {
     /// The `Branched` iterator can iterate over two different types.
     /// It is only useful if the two iterators have different [`Iterator::Item`]s.
     /// If they are the same, you can iterate directly over the [`IterIf`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    /// use either::Either;
+    ///
+    /// let mut something = ('a'..'f')
+    ///     .map_if(true, |c| c as u8)
+    ///     .branched();
+    /// assert_eq!(something.next(), Some(Either::Left(97)));
+    /// assert_eq!(something.next(), Some(Either::Left(98)));
+    ///
+    /// let mut something_else = ('a'..'f')
+    ///     .map_if(false, |c| c as u8)
+    ///     .branched();
+    /// assert_eq!(something_else.next(), Some(Either::Right('a')));
+    /// assert_eq!(something_else.next(), Some(Either::Right('b')));
+    /// ```
     #[cfg(feature = "branched")]
     pub fn branched(self) -> Branched<T, F> {
         Branched(self)
     }
 
     /// If the original condition was false, apply `func` to the iterator. Otherwise, pass.
-    pub fn iter_else<C, N: Iterator>(self, func: C) -> IterIf<T, N>
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let some_numbers = (0..5)
+    ///     .iter_if(true, Iterator::rev)
+    ///     .else_iter(|i| i.skip(3))
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(some_numbers, vec![4, 3, 2, 1, 0]);
+    ///
+    /// let some_more_numbers = (0..5)
+    ///     .iter_if(false, Iterator::rev)
+    ///     .else_iter(|i| i.skip(3))
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(some_more_numbers, vec![3, 4]);
+    /// ```
+    pub fn else_iter<C, N: Iterator>(self, func: C) -> IterIf<T, N>
     where
         C: Fn(F) -> N,
     {
@@ -132,10 +209,25 @@ impl<T: Iterator, F: Iterator> IterIf<T, F> {
 
     /// If the original condition was false, map `func` over the iterator. Otherwise, pass.
     ///
-    /// This is a shorthand for `iter_else(|i| i.map(func))`.
-    /// See the documentation for [`iter_else`] for more.
+    /// # Examples
     ///
-    /// [`iter_else`]: IterIf::iter_else
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let some_numbers = (0..5)
+    ///     .map_if(true, |n| n * 2)
+    ///     .else_map(|n| n + 3)
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(some_numbers, vec![0, 2, 4, 6, 8]);
+    ///
+    /// let some_more_numbers = (0..5)
+    ///     .map_if(false, |n| n * 2)
+    ///     .else_map(|n| n + 3)
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(some_more_numbers, vec![3, 4, 5, 6, 7]);
+    /// ```
+    ///
+    /// [`else_iter`]: IterIf::else_iter
     pub fn else_map<C, N>(self, func: C) -> IterIf<T, Map<F, C>>
     where
         C: Fn(F::Item) -> N,
@@ -147,6 +239,24 @@ impl<T: Iterator, F: Iterator> IterIf<T, F> {
     }
 
     /// Return `Some(T)` if the condition was true and `None` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let numbers = (0..5)
+    ///     .iter_if(true, Iterator::rev)
+    ///     .as_true()
+    ///     .unwrap()
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(numbers, vec![4, 3, 2, 1, 0]);
+    ///
+    /// let more_numbers = (0..5)
+    ///     .iter_if(false, Iterator::rev)
+    ///     .as_true();
+    /// assert!(more_numbers.is_none());
+    /// ```
     pub fn as_true(self) -> Option<T> {
         match self {
             IterIf::True(t) => Some(t),
@@ -155,85 +265,28 @@ impl<T: Iterator, F: Iterator> IterIf<T, F> {
     }
 
     /// Return `Some(F)` if the condition was false and `None` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let numbers = (0..5)
+    ///     .iter_if(false, Iterator::rev)
+    ///     .as_false()
+    ///     .unwrap()
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(numbers, vec![0, 1, 2, 3, 4]);
+    ///
+    /// let more_numbers = (0..5)
+    ///     .iter_if(true, Iterator::rev)
+    ///     .as_false();
+    /// assert!(more_numbers.is_none());
+    /// ```
     pub fn as_false(self) -> Option<F> {
         match self {
             IterIf::True(_) => None,
             IterIf::False(f) => Some(f),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn when_true() {
-        let numbers = (0..5).iter_if(true, Iterator::rev).collect::<Vec<_>>();
-        assert_eq!(numbers, vec![4, 3, 2, 1, 0]);
-    }
-
-    #[test]
-    fn when_false() {
-        let numbers = (0..5).iter_if(false, Iterator::rev).collect::<Vec<_>>();
-        assert_eq!(numbers, vec![0, 1, 2, 3, 4]);
-    }
-
-    #[test]
-    fn else_when_true() {
-        let numbers = (0..5)
-            .iter_if(true, Iterator::rev)
-            .iter_else(|i| i.map(|n| n * 2))
-            .collect::<Vec<_>>();
-        assert_eq!(numbers, vec![4, 3, 2, 1, 0]);
-    }
-
-    #[test]
-    fn else_when_false() {
-        let numbers = (0..5)
-            .iter_if(false, Iterator::rev)
-            .iter_else(|i| i.map(|n| n * 2))
-            .collect::<Vec<_>>();
-        assert_eq!(numbers, vec![0, 2, 4, 6, 8]);
-    }
-
-    #[test]
-    fn as_true() {
-        let something = ('a'..'f')
-            .map_if(true, |l| l.to_ascii_uppercase())
-            .else_map(|l| l as u8)
-            .as_true()
-            .unwrap()
-            .collect::<Vec<_>>();
-        assert_eq!(something, vec!['A', 'B', 'C', 'D', 'E']);
-    }
-
-    #[test]
-    fn as_false() {
-        let something = ('a'..'f')
-            .map_if(false, |l| l.to_ascii_uppercase())
-            .else_map(|l| l as u8)
-            .as_false()
-            .unwrap()
-            .collect::<Vec<_>>();
-        assert_eq!(something, vec![97, 98, 99, 100, 101]);
-    }
-
-    #[test]
-    fn as_true_when_false() {
-        let option = ('a'..'f')
-            .map_if(false, |l| l.to_ascii_uppercase())
-            .else_map(|l| l as u8)
-            .as_true();
-        assert!(option.is_none());
-    }
-
-    #[test]
-    fn as_false_when_true() {
-        let option = ('a'..'f')
-            .map_if(true, |l| l.to_ascii_uppercase())
-            .else_map(|l| l as u8)
-            .as_false();
-        assert!(option.is_none());
     }
 }
