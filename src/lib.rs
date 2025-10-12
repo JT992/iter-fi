@@ -289,4 +289,124 @@ impl<T: Iterator, F: Iterator> IterIf<T, F> {
             IterIf::False(f) => Some(f),
         }
     }
+
+    /// Apply `func` to the iterator if the original condition was true.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let numbers = (0..5)
+    ///     .iter_if(true, Iterator::rev)
+    ///     .iter_left(|i| i.skip(2))
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(numbers, vec![2, 1, 0]);
+    ///
+    /// let more_numbers = (0..5)
+    ///     .iter_if(false, Iterator::rev)
+    ///     .iter_left(|i| i.skip(2))
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(more_numbers, vec![0, 1, 2, 3, 4]);
+    /// ```
+    #[doc(alias = "iter_true")]
+    pub fn iter_left<C, N: Iterator>(self, func: C) -> IterIf<N, F>
+    where
+        C: Fn(T) -> N,
+    {
+        match self {
+            IterIf::True(t) => IterIf::True(func(t)),
+            IterIf::False(f) => IterIf::False(f),
+        }
+    }
+
+    /// Apply `func` to the iterator if the original condition was false.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let numbers = (0..5)
+    ///     .iter_if(false, Iterator::rev)
+    ///     .iter_right(|i| i.skip(2))
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(numbers, vec![2, 3, 4]);
+    ///
+    /// let more_numbers = (0..5)
+    ///     .iter_if(true, Iterator::rev)
+    ///     .iter_right(|i| i.skip(2))
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(more_numbers, vec![4, 3, 2, 1, 0]);
+    /// ```
+    #[doc(alias = "iter_false")]
+    pub fn iter_right<C, N: Iterator>(self, func: C) -> IterIf<T, N>
+    where
+        C: Fn(F) -> N,
+    {
+        match self {
+            IterIf::True(t) => IterIf::True(t),
+            IterIf::False(f) => IterIf::False(func(f)),
+        }
+    }
+
+    /// Map `func` over the iterator if the original condition was true.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let numbers = (0..5)
+    ///     .map_if(true, |x| x + 1)
+    ///     .map_left(|x| x * x)
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(numbers, vec![1, 4, 9, 16, 25]);
+    ///
+    /// let more_numbers = (0..5)
+    ///     .map_if(false, |x| x + 1)
+    ///     .map_left(|x| x * x)
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(more_numbers, vec![0, 1, 2, 3, 4]);
+    /// ```
+    #[doc(alias = "map_true")]
+    pub fn map_left<C, N>(self, func: C) -> IterIf<Map<T, C>, F>
+    where
+        C: Fn(T::Item) -> N,
+    {
+        match self {
+            IterIf::True(t) => IterIf::True(t.map(func)),
+            IterIf::False(f) => IterIf::False(f),
+        }
+    }
+
+    /// Map `func` over the iterator if the original condition was false.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterFi;
+    ///
+    /// let numbers = (0..5)
+    ///     .map_if(false, |x| x + 1)
+    ///     .map_right(|x| x * x)
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(numbers, vec![0, 1, 4, 9, 16]);
+    ///
+    /// let more_numbers = (0..5)
+    ///     .map_if(true, |x| x + 1)
+    ///     .map_right(|x| x * x)
+    ///     .collect::<Vec<_>>();
+    /// assert_eq!(more_numbers, vec![1, 2, 3, 4, 5]);
+    /// ```
+    #[doc(alias = "map_false")]
+    pub fn map_right<C, N>(self, func: C) -> IterIf<T, Map<F, C>>
+    where
+        C: Fn(F::Item) -> N,
+    {
+        match self {
+            IterIf::True(t) => IterIf::True(t),
+            IterIf::False(f) => IterIf::False(f.map(func)),
+        }
+    }
 }
