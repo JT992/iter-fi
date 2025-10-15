@@ -409,4 +409,28 @@ impl<T: Iterator, F: Iterator> IterIf<T, F> {
             IterIf::False(f) => IterIf::False(f.map(func)),
         }
     }
+
+    /// Convert the items of `T` and `F` to the same type using [`Into`].
+    ///
+    /// Since the resulting `IterIf` variants both have the same `Item`, you can iterate directly
+    /// over the result.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_fi::IterIf;
+    /// use std::ops::Range;
+    ///
+    /// let iter: IterIf<Range<u16>, Range<u32>> = IterIf::True(0..5);
+    ///
+    /// let something = iter.merge_into::<u64>().collect::<Vec<_>>();
+    /// assert_eq!(something, vec![0_u64, 1, 2, 3, 4]);
+    /// ```
+    pub fn merge_into<I>(self) -> IterIf<impl Iterator<Item = I>, impl Iterator<Item = I>>
+    where
+        T::Item: Into<I>,
+        F::Item: Into<I>,
+    {
+        self.map_left(Into::into).map_right(Into::into)
+    }
 }
