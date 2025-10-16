@@ -82,7 +82,11 @@ impl<T: Iterator, F: Iterator> Branched<T, F> {
     }
 }
 
-impl<T: Iterator<Item = I>, F: Iterator<Item = I>, I> Branched<T, F> {
+impl<T, F> Branched<T, F>
+where
+    T: Iterator,
+    F: Iterator<Item = T::Item>,
+{
     /// Unwrap this branched iterator, returning the original [`IterIf`].
     ///
     /// The only difference between `self.unbranch()` and `self.0` is that

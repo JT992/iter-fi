@@ -137,8 +137,12 @@ pub enum IterIf<T: Iterator, F: Iterator> {
     False(F),
 }
 
-impl<T: Iterator<Item = I>, F: Iterator<Item = I>, I> Iterator for IterIf<T, F> {
-    type Item = I;
+impl<T, F> Iterator for IterIf<T, F>
+where
+    T: Iterator,
+    F: Iterator<Item = T::Item>,
+{
+    type Item = T::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
